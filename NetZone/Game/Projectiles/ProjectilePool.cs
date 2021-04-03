@@ -8,92 +8,113 @@ using Microsoft.Xna.Framework;
 
 namespace NetZone
 {
+	struct ProjectilePoolObject
+	{
+		public Projectile Projectile;
+		public bool Active;
+	}
+
 	class ProjectilePool
 	{
-		Projectile[] projectiles;
+		ProjectilePoolObject[] pool;
 
 		public ProjectilePool(int size)
 		{
-			projectiles = new Projectile[size];
+			pool = new ProjectilePoolObject[size];
 
-			for (int i = 0; i < projectiles.Length; i++)
+			for (int i = 0; i < pool.Length; i++)
 			{
-				projectiles[i] = new Projectile();
-				projectiles[i].Active = false;
+				pool[i].Projectile = new Projectile();
+				pool[i].Active = false;
 			}
 		}
 
 		public void Update(GameTime gameTime)
 		{
-			for (int i = 0; i < projectiles.Length; i++)
+			for (int i = 0; i < pool.Length; i++)
 			{
-				if (projectiles[i].Active == true)
+				if (pool[i].Active == true)
 				{
-					projectiles[i].Update(gameTime);
+					pool[i].Projectile.Update(gameTime);
+
+					if(pool[i].Projectile.Deactivate == true)
+					{
+						pool[i].Projectile.Deactivate = false;
+						pool[i].Active = false;
+					}
 				}
 			}
+		}
+
+		public int Length()
+		{
+			return pool.Length;
+		}
+
+		public Projectile GetProjectile(int index)
+		{
+			return pool[index].Projectile;
 		}
 
 		public void SetProjectile(int index, Projectile projectile)
 		{
-			projectiles[index] = projectile;
-			projectiles[index].Active = true;
-		}
-
-		public void SetUnusedProjectile(Projectile projectile)
-		{
-			for (int i = 0; i < projectiles.Length; i++)
-			{
-				if (projectiles[i].Active == false)
-				{
-					projectiles[i] = projectile;
-					projectiles[i].Active = true;
-
-					break;
-				}
-			}
+			pool[index].Projectile = projectile;
+			pool[index].Active = true;
 		}
 
 		public int GetUnusedIndex()
 		{
-			for (int i = 0; i < projectiles.Length; i++)
+			for (int i = 0; i < pool.Length; i++)
 			{
-				if (projectiles[i].Active == false)
+				if (pool[i].Active == false)
 				{
 					return i;
 				}
 			}
 
-			return -1; //Pool overflow !!!
+			return 0; //Pool overflow !!!
 		}
 
-		public void SetPositions(Point[] positions)
+		public void SetUnusedProjectile(Projectile projectile)
 		{
-			for (int i = 0; i < projectiles.Length; i++)
+			for (int i = 0; i < pool.Length; i++)
 			{
-				projectiles[i].Position = positions[i];
+				if (pool[i].Active == false)
+				{
+					pool[i].Projectile = projectile;
+					pool[i].Active = true;
+					break;
+				}
 			}
 		}
 
 		public Point[] GetAllPositions()
 		{
-			Point[] positions = new Point[projectiles.Length];
+			Point[] positions = new Point[pool.Length];
 
-			for (int i = 0; i < projectiles.Length; i++)
+			for (int i = 0; i < pool.Length; i++)
 			{
-				positions[i] = projectiles[i].Position;
+				positions[i] = pool[i].Projectile.Position;
 			}
 
 			return positions;
 		}
 
+		public void SetPositions(Point[] positions)
+		{
+			for (int i = 0; i < pool.Length; i++)
+			{
+				pool[i].Projectile.Position = positions[i];
+			}
+		}
+
 		public void Draw(SpriteBatch spriteBatch)
 		{
-			for (int i = 0; i < projectiles.Length; i++)
+			for (int i = 0; i < pool.Length; i++)
 			{
-				if (projectiles[i].Active == true)
+				if (pool[i].Active == true)
 				{
-					projectiles[i].Draw(spriteBatch);
+					pool[i].Projectile.Draw(spriteBatch);
 				}
 			}
 		}

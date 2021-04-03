@@ -9,7 +9,7 @@ using Microsoft.Xna.Framework.Input;
 
 namespace NetZone
 {
-	class UniqueWeapons
+	class UniqueWeapon
 	{
 		public static Weapon PhasedPlasmaRifle()
 		{

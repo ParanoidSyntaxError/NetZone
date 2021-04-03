@@ -11,9 +11,13 @@ namespace NetZone
 {
 	class UIElement
 	{
+		public string Title;
+
 		public Point Position;
 
 		public Point Size;
+
+		public int Scale;
 
 		public bool Moveable;
 
@@ -23,17 +27,16 @@ namespace NetZone
 		public Rectangle OuterCollider;
 		public Rectangle InnerCollider;
 
-		string frame;
+		Point glyphSize;
 
-		string frameTop;
-		string frameSide;
+		string frame;
 
 		bool followMouse;
 
 		public virtual void Initialize()
 		{
-			frameTop = "+";
-			frameSide = "|";
+			string frameTop = "+";
+			string frameSide = "|";
 
 			for(int i = 0; i < Size.X; i++)
 			{
@@ -44,6 +47,14 @@ namespace NetZone
 			frameTop += "+";
 			frameSide += "|";
 
+			string frameBottom = frameTop;
+
+			if(Title != null)
+			{
+				frameTop = frameTop.Remove(1, Title.Length);
+				frameTop = frameTop.Insert(1, Title);
+			}
+
 			frame = frameTop + "\n";
 
 			for (int i = 0; i < Size.Y; i++)
@@ -51,11 +62,16 @@ namespace NetZone
 				frame += frameSide + "\n";
 			}
 
-			frame += frameTop;
+			frame += frameBottom;
 
-			OuterCollider = new Rectangle(Position, new Point(Size.X * 14, Size.Y * 18));
+			Size.X += 2;
+			Size.Y += 2;
 
-			InnerCollider = new Rectangle(Position.X + 14, Position.Y + 18, (Size.X - 2) * 14, (Size.Y - 2) * 18);
+			glyphSize = new Point(8 * Scale, 16 * Scale);
+
+			OuterCollider = new Rectangle(Position, new Point(Size.X * glyphSize.X, Size.Y * glyphSize.Y));
+
+			InnerCollider = new Rectangle(Position.X + glyphSize.X, Position.Y + glyphSize.Y, (Size.X - 2) * glyphSize.X, (Size.Y - 2) * glyphSize.Y);
 		}
 
 		public virtual void Update()
@@ -83,8 +99,7 @@ namespace NetZone
 					Position = Mouse.GetState().Position;
 
 					OuterCollider.Location = Position;
-					InnerCollider.Location = new Point(Position.X + 14, Position.Y + 18);
-
+					InnerCollider.Location = new Point(Position.X + glyphSize.X, Position.Y + glyphSize.Y);
 				}
 			}
 
@@ -116,9 +131,7 @@ namespace NetZone
 
 		public virtual void Draw(SpriteBatch spriteBatch)
 		{
-			spriteBatch.Draw(LoadedContent.Pixel, OuterCollider, Color.Green);
-
-			spriteBatch.DrawString(LoadedContent.Fonts[0], frame, Position.ToVector2(), Color.White);
+			GlyphHelper.DrawGlyph(spriteBatch, frame, Position, Scale, Color.White);
 		}
 	}
 }

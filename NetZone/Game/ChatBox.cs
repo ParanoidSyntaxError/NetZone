@@ -20,9 +20,13 @@ namespace NetZone
 
 		public ChatBox()
 		{
+			Title = "CHAT";
+
 			Position = new Point(100, 100);
 
 			Size = new Point(30, 16);
+
+			Scale = 2;
 
 			Moveable = true;
 
@@ -107,12 +111,12 @@ namespace NetZone
 		public override void Draw(SpriteBatch spriteBatch)
 		{
 			base.Draw(spriteBatch);
-
+			
 			//Input line
-			spriteBatch.DrawString(LoadedContent.Fonts[0], "------------------------------", new Vector2(InnerCollider.Location.X, InnerCollider.Location.Y + ((Size.Y - 5) * 19) + 5), Color.White);
+			GlyphHelper.DrawGlyph(spriteBatch, "------------------------------", new Point(Position.X + (8 * Scale), Position.Y + (Size.Y - 3) * (16 * Scale)), Scale, Color.White);
 
 			//Input text
-			spriteBatch.DrawString(LoadedContent.Fonts[0], consoleInput, new Vector2(InnerCollider.Location.X, InnerCollider.Location.Y + ((Size.Y - 4) * 19) + 5), Color.Cyan); 
+			GlyphHelper.DrawGlyph(spriteBatch, consoleInput, new Point(Position.X + (8 * Scale), Position.Y + (Size.Y - 2) * (16 * Scale)), 1, Color.White);
 
 			//Chat logs
 			for (int i = 0; i < 9; i++)
@@ -122,8 +126,7 @@ namespace NetZone
 					break;
 				}
 
-				spriteBatch.DrawString(LoadedContent.Fonts[0],
-					ChatLines[i].Line, new Vector2(InnerCollider.Location.X, (InnerCollider.Location.Y + (Size.Y - 6) * 19) - (i * 25) + 5), ChatLines[i].Color);
+				GlyphHelper.DrawGlyph(spriteBatch, ChatLines[i].Line, new Point(Position.X + (8 * Scale), Position.Y + (Size.Y - 4) * (16 * Scale) - (i * 16 * Scale)), 1, ChatLines[i].Color);
 			}
 		}
 	}

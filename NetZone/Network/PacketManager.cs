@@ -12,6 +12,7 @@ namespace NetZone
 		MovementInput,
 		AttackInput,
 		PlayerPositions,
+		EnemyPositions,
 		ProjectilePositions,
 		ProjectileSpawned,
 		ClientChat,
@@ -20,7 +21,13 @@ namespace NetZone
 		InitalServerConnection,
 		ItemSpawned,
 		PlayerSpawned,
-		PlayerInventoryAdd
+		EnemySpawned,
+		PlayerInventoryAdd,
+		InitializePlayers,
+		InitializeEnemies,
+		InitializeItems,
+		EndInitialize,
+		SetActiveItem
 	}
 
 	class PacketManager
@@ -34,15 +41,23 @@ namespace NetZone
 			{
 				{ SentPacket.MovementInput, PlayerMoveReceived },
 				{ SentPacket.AttackInput, PlayerAttackReceived },
+				{ SentPacket.ItemPickup, ItemPickupReceived },
 				{ SentPacket.PlayerPositions, PlayerPositionsReceived },
+				{ SentPacket.EnemyPositions, EnemyPositionsReceived },
 				{ SentPacket.ProjectilePositions, ProjectilePositionsReceived },
 				{ SentPacket.ProjectileSpawned, ProjectileSpawnedReceived },
 				{ SentPacket.ClientChat, ClientChatReceived },
 				{ SentPacket.ServerChat, ServerChatReceived },
 				{ SentPacket.InitalServerConnection, InitalServerConnectionReceived },
+				{ SentPacket.InitializeEnemies, InitializeEnemiesReceived },
 				{ SentPacket.ItemSpawned, ItemSpawnedReceived },
 				{ SentPacket.PlayerSpawned, PlayerSpawnedReceived },
-				{ SentPacket.PlayerInventoryAdd, PlayerInventoryAddReceived }
+				{ SentPacket.EnemySpawned, EnemySpawnedReceived },
+				{ SentPacket.PlayerInventoryAdd, PlayerInventoryAddReceived },
+				{ SentPacket.InitializePlayers, InitializePlayersReceived },
+				{ SentPacket.InitializeItems, InitializeItemsReceived },
+				{ SentPacket.EndInitialize, EndInitializeReceived },
+				{ SentPacket.SetActiveItem, SetItemActiveReceived }
 			};
 		}
 
@@ -60,7 +75,7 @@ namespace NetZone
 
 			for (int i = 0; i < Server.MaxPlayers; i++)
 			{
-				if(Server.Listeners[i].Socket.TcpClient != null)
+				if (Server.Listeners[i].Socket.TcpClient != null)
 				{
 					Server.Listeners[i].Socket.SendData(packet);
 				}
@@ -88,7 +103,7 @@ namespace NetZone
 				SendListenerTCPData(clientID, packet);
 			}
 
-			Server.GameLogic.PlayerSpawn();
+			Server.DebugConsole.NewLine("SENT: Client ID " + clientID, Color.Green);
 		}
 
 		static void InitalServerConnectionReceived(int listenerID, Packet packet) //CLIENT RECEIVES
@@ -97,6 +112,239 @@ namespace NetZone
 
 			Client.Socket.ID = clientID;
 		}
+		#endregion
+
+		#region Initialize player packets
+
+		public static void InitializePlayersSend(int clientID, PlayerPool playerPool) //SERVER SENDS
+		{
+			using (Packet packet = new Packet(SentPacket.InitializePlayers))
+			{
+				//Array length
+				packet.Write(playerPool.Length());
+
+				for (int i = 0; i < playerPool.Length(); i++)
+				{
+					//Active
+					packet.Write(playerPool.GetActive(i));
+
+					if (playerPool.GetActive(i) == true)
+					{
+						//Position
+						packet.Write(playerPool.GetPlayer(i).Position.X);
+						packet.Write(playerPool.GetPlayer(i).Position.Y);
+
+						//Equipped weapon
+						packet.Write(playerPool.GetPlayer(i).EquippedWeapon.Art);
+
+						packet.Write(playerPool.GetPlayer(i).EquippedWeapon.Color.R);
+						packet.Write(playerPool.GetPlayer(i).EquippedWeapon.Color.G);
+						packet.Write(playerPool.GetPlayer(i).EquippedWeapon.Color.B);
+
+						packet.Write(playerPool.GetPlayer(i).EquippedWeapon.Damage);
+
+						packet.Write(playerPool.GetPlayer(i).EquippedWeapon.Speed);
+
+						packet.Write(playerPool.GetPlayer(i).EquippedWeapon.Range);
+
+						packet.Write((int)playerPool.GetPlayer(i).EquippedWeapon.ProjectileType);
+
+						packet.Write(playerPool.GetPlayer(i).EquippedWeapon.Frequency);
+
+						packet.Write(playerPool.GetPlayer(i).EquippedWeapon.Amplitude);
+					}
+				}
+
+				SendListenerTCPData(clientID, packet);
+			}
+
+			Server.DebugConsole.NewLine("SENT: Initialize players on client ID " + clientID, Color.Pink);
+		}
+
+		static void InitializePlayersReceived(int listenerID, Packet packet) //CLIENT RECEIVES
+		{
+			int arrayLength = packet.ReadInt();
+
+			PlayerPool playerPool = new PlayerPool(arrayLength);
+
+			for (int i = 0; i < playerPool.Length(); i++)
+			{
+				//Active
+				bool playerActive = packet.ReadBool();
+
+				playerPool.SetActive(i, playerActive);
+
+				if (playerPool.GetActive(i) == true)
+				{
+					//Position
+					playerPool.GetPlayer(i).Position.X = packet.ReadInt();
+					playerPool.GetPlayer(i).Position.Y = packet.ReadInt();
+
+					//Equipped weapon
+					playerPool.GetPlayer(i).EquippedWeapon.Art = packet.ReadString();
+
+					playerPool.GetPlayer(i).EquippedWeapon.Color.R = packet.ReadByte();
+					playerPool.GetPlayer(i).EquippedWeapon.Color.G = packet.ReadByte();
+					playerPool.GetPlayer(i).EquippedWeapon.Color.B = packet.ReadByte();
+
+					playerPool.GetPlayer(i).EquippedWeapon.Damage = packet.ReadInt();
+
+					playerPool.GetPlayer(i).EquippedWeapon.Speed = packet.ReadInt();
+
+					playerPool.GetPlayer(i).EquippedWeapon.Range = packet.ReadFloat();
+
+					playerPool.GetPlayer(i).EquippedWeapon.ProjectileType = (ProjectileType)packet.ReadInt();
+
+					playerPool.GetPlayer(i).EquippedWeapon.Frequency = packet.ReadFloat();
+
+					playerPool.GetPlayer(i).EquippedWeapon.Amplitude = packet.ReadFloat();
+				}
+			}
+
+			Client.GameScreen.PlayerPool = playerPool;
+		}
+		#endregion
+
+		#region Initialize enemy packets
+
+		public static void InitializeEnemiesSend(int clientID, EnemyPool enemyPool) //SERVER SENDS
+		{
+			using (Packet packet = new Packet(SentPacket.InitializeEnemies))
+			{
+				packet.Write(enemyPool.Length());
+
+				for(int i = 0; i < enemyPool.Length(); i++)
+				{
+					packet.Write(enemyPool.GetActive(i));
+
+					if(enemyPool.GetActive(i) == true)
+					{
+						packet.Write((int)enemyPool.GetEnemy(i).Type);
+
+						packet.Write(enemyPool.GetEnemy(i).Position.X);
+						packet.Write(enemyPool.GetEnemy(i).Position.Y);
+					}
+				}
+
+				SendListenerTCPData(clientID, packet);
+			}
+
+			Server.DebugConsole.NewLine("SENT: Initialize enemies on client ID " + clientID, Color.SaddleBrown);
+		}
+
+		static void InitializeEnemiesReceived(int listenerID, Packet packet) //CLIENT RECEIVES
+		{
+			int arrayLength = packet.ReadInt();
+
+			EnemyPool enemyPool = new EnemyPool(arrayLength, Client.GameScreen.PlayerPool, Client.GameScreen.ProjectilePool); //BAD NOT GOOD
+
+			for(int i = 0; i < enemyPool.Length(); i++)
+			{
+				bool active = packet.ReadBool();
+
+				enemyPool.SetActive(i, active);
+
+				if(enemyPool.GetActive(i) == true)
+				{
+					EnemyType type = (EnemyType)packet.ReadInt();
+
+					int posX = packet.ReadInt();
+					int posY = packet.ReadInt();
+
+					enemyPool.SetEnemy(i, type, new Point(posX, posY));
+				}
+			}
+
+			Client.GameScreen.EnemyPool = enemyPool;
+		}
+		#endregion
+
+		#region Initialize item packets
+
+		public static void InitializeItemsSend(int clientID, ItemPool itemPool) //SERVER SENDS
+		{
+			using (Packet packet = new Packet(SentPacket.InitializeItems))
+			{
+				//Array length
+				packet.Write(itemPool.Length());
+
+				for (int i = 0; i < itemPool.Length(); i++)
+				{
+					//Active
+					packet.Write(itemPool.GetActive(i));
+
+					if (itemPool.GetActive(i) == true)
+					{
+						//Position
+						packet.Write(itemPool.GetItem(i).Position.X);
+						packet.Write(itemPool.GetItem(i).Position.Y);
+
+						//Art
+						packet.Write(itemPool.GetItem(i).Art);
+
+						//Color
+						packet.Write(itemPool.GetItem(i).Color.R);
+						packet.Write(itemPool.GetItem(i).Color.G);
+						packet.Write(itemPool.GetItem(i).Color.B);
+					}
+				}
+
+				SendListenerTCPData(clientID, packet);
+			}
+
+			Server.DebugConsole.NewLine("SENT: Initialize items on client ID " + clientID, Color.Pink);
+		}
+
+		static void InitializeItemsReceived(int listenerID, Packet packet) //CLIENT RECEIVES
+		{
+			int arrayLength = packet.ReadInt();
+
+			ItemPool itemPool = new ItemPool(arrayLength);
+
+			for (int i = 0; i < itemPool.Length(); i++)
+			{
+				//Active
+				bool itemActive = packet.ReadBool();
+
+				itemPool.SetActive(i, itemActive);
+
+				if (itemPool.GetActive(i) == true)
+				{
+					//Position
+					itemPool.GetItem(i).Position.X = packet.ReadInt();
+					itemPool.GetItem(i).Position.Y = packet.ReadInt();
+
+					//Art
+					itemPool.GetItem(i).Art = packet.ReadString();
+
+					//Color
+					itemPool.GetItem(i).Color.R = packet.ReadByte();
+					itemPool.GetItem(i).Color.G = packet.ReadByte();
+					itemPool.GetItem(i).Color.B = packet.ReadByte();
+				}
+			}
+
+			Client.GameScreen.GroundItems = itemPool;
+		}
+		#endregion
+
+		#region End initialize packets (signals end of this clients initialization)
+
+		public static void EndInitializeSend(int clientID) //SERVER SENDS
+		{
+			using (Packet packet = new Packet(SentPacket.EndInitialize))
+			{
+				SendListenerTCPData(clientID, packet);
+			}
+
+			Server.DebugConsole.NewLine("SENT : End client ID " + clientID + " data initialization", Color.Green);
+		}
+
+		static void EndInitializeReceived(int listenerID, Packet packet) //CLIENT RECEIVES
+		{
+			Client.GameScreen.EndInitialize();
+		}
+
 		#endregion
 
 		#region Chat packets
@@ -115,7 +363,7 @@ namespace NetZone
 		{
 			string message = packet.ReadString();
 
-			Server.GameLogic.ConsoleLines.Add(new ConsoleLine() { Line = message, Color = Color.Yellow });
+			Server.DebugConsole.NewLine(message, Color.White);
 
 			ServerChatSend(message);
 		}
@@ -159,6 +407,38 @@ namespace NetZone
 			int index = packet.ReadInt();
 
 			Client.GameScreen.PlayerPool.SetPlayer(index, new Player());
+		}
+		#endregion
+
+		#region Enemy spawned packets
+
+		public static void EnemySpawnedSend(int index, EnemyType type, Point position) //SERVER SENDS
+		{
+			using (Packet packet = new Packet(SentPacket.EnemySpawned))
+			{
+				packet.Write(index);
+
+				packet.Write((int)type);
+
+				packet.Write(position.X);
+				packet.Write(position.Y);
+
+				SendTCPDataToAllListeners(packet);
+			}
+
+			Server.DebugConsole.NewLine("SENT : Spawned enemy", Color.Pink);
+		}
+
+		static void EnemySpawnedReceived(int listenerID, Packet packet) //CLIENT RECEIVES
+		{
+			int index = packet.ReadInt();
+
+			EnemyType type = (EnemyType)packet.ReadInt();
+
+			int posX = packet.ReadInt();
+			int posY = packet.ReadInt();
+
+			Client.GameScreen.EnemyPool.SetEnemy(index, type, new Point(posX, posY));
 		}
 		#endregion
 
@@ -220,6 +500,8 @@ namespace NetZone
 		{
 			int index = packet.ReadInt();
 
+			Server.DebugConsole.NewLine("GOT : Try pickup", Color.Yellow);
+
 			Server.GameLogic.PlayerItemPickup(listenerID, index);
 		}
 		#endregion
@@ -236,6 +518,8 @@ namespace NetZone
 
 				SendListenerTCPData(playerID, packet);
 			}
+
+			Server.DebugConsole.NewLine("SENT : Add to players inventory", Color.Yellow);
 		}
 
 		static void PlayerInventoryAddReceived(int listenerID, Packet packet) //CLIENT RECEIVES
@@ -244,8 +528,33 @@ namespace NetZone
 
 			int inventoryIndex = packet.ReadInt();
 
-			//Maybe move to a new GameScreen method
-			Client.GameScreen.PlayerPool.Players[listenerID].Inventory.SetItem(itemIndex, Client.GameScreen.GroundItems.Items[itemIndex]);
+			Client.GameScreen.PlayerInventoryAdd(listenerID, itemIndex, inventoryIndex);
+		}
+		#endregion
+
+		#region Set item active packets
+
+		public static void SetItemActiveSend(int itemIndex, bool value) //SERVER SENDS
+		{
+			using (Packet packet = new Packet(SentPacket.SetActiveItem))
+			{
+				packet.Write(itemIndex);
+
+				packet.Write(value);
+
+				SendTCPDataToAllListeners(packet);
+			}
+
+			Server.DebugConsole.NewLine("SENT : Item index " + itemIndex + " Active set to " + value, Color.Violet);
+		}
+
+		static void SetItemActiveReceived(int listenerID, Packet packet) //CLIENT RECEIVES
+		{
+			int itemIndex = packet.ReadInt();
+
+			bool itemActive = packet.ReadBool();
+
+			Client.GameScreen.GroundItems.SetActive(itemIndex, itemActive);
 		}
 		#endregion
 
@@ -268,8 +577,6 @@ namespace NetZone
 			int Y = packet.ReadInt();
 
 			Server.GameLogic.PlayerMove(listenerID, new Point(X, Y));
-
-			PlayerPositionsSend(Server.GameLogic.PlayerPool.GetAllPositions());
 		}
 		#endregion
 
@@ -279,6 +586,8 @@ namespace NetZone
 		{
 			using (Packet packet = new Packet(SentPacket.PlayerPositions))
 			{
+				packet.Write(positions.Length);
+
 				for (int i = 0; i < positions.Length; i++)
 				{
 					packet.Write(positions[i].X);
@@ -288,12 +597,14 @@ namespace NetZone
 				SendTCPDataToAllListeners(packet);
 			}
 
-			Server.DebugConsole.NewLine("SENT : Player positions.", Color.Cyan);
+			//Server.DebugConsole.NewLine("SENT : Player positions.", Color.Cyan);
 		}
 
 		static void PlayerPositionsReceived(int listenerID, Packet packet) //CLIENT RECEIVES
 		{
-			Point[] newPlayerPositions = new Point[10];
+			int length = packet.ReadInt();
+
+			Point[] newPlayerPositions = new Point[length];
 
 			for (int i = 0; i < newPlayerPositions.Length; i++) //MAX PLAYER CHANGED PER SERVER, GET FROM INITIAL CONNECTION
 			{
@@ -302,6 +613,44 @@ namespace NetZone
 			}
 
 			Client.GameScreen.PlayerPool.SetPositions(newPlayerPositions);
+
+			Main.MainCamera.FollowPosition(Client.GameScreen.PlayerPool.GetPlayer(Client.GetID()).Position);
+		}
+		#endregion
+
+		#region Enemy positions packets
+		
+		public static void EnemyPositionsSend(Point[] positions) //SERVER SENDS
+		{
+			using (Packet packet = new Packet(SentPacket.EnemyPositions))
+			{
+				packet.Write(positions.Length);
+
+				for(int i = 0; i < positions.Length; i++)
+				{
+					packet.Write(positions[i].X);
+					packet.Write(positions[i].Y);
+				}
+
+				SendTCPDataToAllListeners(packet);
+			}
+
+			//Server.DebugConsole.NewLine("SENT : Enemy positions.", Color.Gray);
+		}
+
+		static void EnemyPositionsReceived(int listenerID, Packet packet) //CLIENT RECEIVES
+		{
+			int length = packet.ReadInt();
+
+			Point[] positions = new Point[length];
+
+			for(int i = 0; i < positions.Length; i++)
+			{
+				positions[i].X = packet.ReadInt();
+				positions[i].Y = packet.ReadInt();
+			}
+
+			Client.GameScreen.EnemyPool.SetAllPositions(positions);
 		}
 		#endregion
 
@@ -350,7 +699,7 @@ namespace NetZone
 			projectile.Direction.X = packet.ReadFloat();
 			projectile.Direction.Y = packet.ReadFloat();
 
-			projectile.Speed = packet.ReadFloat();
+			projectile.Speed = packet.ReadInt();
 
 			projectile.Range = packet.ReadFloat();
 
@@ -382,8 +731,7 @@ namespace NetZone
 				SendTCPDataToAllListeners(packet);
 			}
 
-			Server.DebugConsole.NewLine("SENT : Projectile positions.", Color.Cyan);
-
+			//Server.DebugConsole.NewLine("SENT : Projectile positions.", Color.Cyan);
 		}
 
 		static void ProjectilePositionsReceived(int listenerID, Packet packet) //CLIENT RECEIVES

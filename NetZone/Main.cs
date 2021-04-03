@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 
 namespace NetZone
 {
@@ -20,16 +21,22 @@ namespace NetZone
 
 		Settings settings;
 
-		public GameState State;
+		static GameState state;
 
-		Server server;
-		Client client;
+		static Menu menu;
+
+		static Server server;
+		static Client client;
 
 		public static MainCamera MainCamera;
 		public static UICamera UICamera;
 
 		public static bool GlobalFlash;
 		Timer flashTimer;
+
+		public static bool CallEndProgram;
+
+		public static Random Random;
 
         public Main()
         {
@@ -45,6 +52,10 @@ namespace NetZone
 
 		protected override void Initialize()
         {
+			SetState(GameState.Menu);
+
+			Random = new Random();
+
 			settings = new Settings(graphics);
 
 			MainCamera = new MainCamera(GraphicsDevice.Viewport);
@@ -59,10 +70,37 @@ namespace NetZone
 			flashTimer.Elapsed += FlashEvent;
 			flashTimer.Start();
 
-			State = GameState.Menu;
-
             base.Initialize();
         }
+
+		void EndProgram()
+		{
+			//End threads
+			//Other safe shutdown calls
+
+			Exit();
+		}
+
+		public static void SetState(GameState value)
+		{
+			state = value;
+
+			switch(state)
+			{
+				case GameState.Menu:
+					if(menu == null)
+					{
+						menu = new Menu();
+					}
+					break;
+				case GameState.Client:
+					client = new Client();
+					break;
+				case GameState.Server:
+					server = new Server();
+					break;
+			}
+		}
 
 		static void FlashEvent(object source, ElapsedEventArgs args)
 		{
@@ -78,26 +116,15 @@ namespace NetZone
 
         protected override void Update(GameTime gameTime)
         {
-            if (Keyboard.GetState().IsKeyDown(Keys.Escape))
+			if (Keyboard.GetState().IsKeyDown(Keys.Escape) || CallEndProgram == true)
 			{
-				Exit();
+				EndProgram();
 			}
 
-			switch(State)
+			switch (state)
 			{
 				case GameState.Menu:
-					if(Keyboard.GetState().IsKeyDown(Keys.D1))
-					{
-						State = GameState.Server;
-
-						server = new Server();
-					}
-					if (Keyboard.GetState().IsKeyDown(Keys.D2))
-					{
-						State = GameState.Client;
-
-						client = new Client();
-					}
+					menu.Update(gameTime);
 					break;
 				case GameState.Server:
 					server.Update(gameTime);
@@ -122,10 +149,10 @@ namespace NetZone
 
 			spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.PointClamp, null, null, null, MainCamera.Transform);
 
-			switch (State)
+			switch (state)
 			{
 				case GameState.Menu:
-					spriteBatch.DrawString(LoadedContent.Fonts[0], "1) Server 2) Client", new Vector2(100, 900), Color.Yellow);
+					menu.Draw(spriteBatch);
 					break;
 				case GameState.Server:
 					server.Draw(spriteBatch);
@@ -142,9 +169,10 @@ namespace NetZone
 
 			spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.PointClamp, null, null, null, UICamera.Transform);
 
-			switch (State)
+			switch (state)
 			{
 				case GameState.Menu:
+					menu.DrawUI(spriteBatch);
 					break;
 				case GameState.Server:
 					break;
@@ -153,7 +181,7 @@ namespace NetZone
 					break;
 			}
 
-			spriteBatch.DrawString(LoadedContent.Fonts[0], State.ToString(), Vector2.Zero, Color.Cyan);
+			spriteBatch.DrawString(LoadedContent.Fonts[0], state.ToString(), Vector2.Zero, Color.Cyan);
 
 			spriteBatch.End();
 			#endregion

@@ -1,77 +1,76 @@
 ﻿using System;
+using System.IO;
+using System.Net.Sockets;
+using System.Threading;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 
 namespace NetZone
 {
+	struct ItemPoolObject
+	{
+		public Item Item;
+		public bool Active;
+	}
+
 	class ItemPool
 	{
-		public Item[] Items;
+		ItemPoolObject[] pool;
 
 		public ItemPool(int size)
 		{
-			Items = new Item[size];
+			pool = new ItemPoolObject[size];
 
-			for (int i = 0; i < Items.Length; i++)
+			for (int i = 0; i < pool.Length; i++)
 			{
-				Items[i] = new Item();
-				Items[i].Active = false;
+				pool[i].Item = new Item();
+				pool[i].Active = false;
 			}
 		}
 
 		public void Update()
 		{
-			for(int i = 0; i < Items.Length; i++)
+			for(int i = 0; i < pool.Length; i++)
 			{
-				if(Items[i].Active == true)
+				if(pool[i].Active == true)
 				{
-					Items[i].Update();
+					pool[i].Item.Update();
 				}
 			}
 		}
 
-		public bool IsFull()
+		public int Length()
 		{
-			for (int i = 0; i < Items.Length; i++)
-			{
-				if (Items[i].Active == false)
-				{
-					return true;
-				}
-			}
+			return pool.Length;
+		}
+	
+		public bool GetActive(int index)
+		{
+			return pool[index].Active;
+		}
 
-			return false;
+		public void SetActive(int index, bool value)
+		{
+			pool[index].Active = value;
+		}
+
+		public Item GetItem(int index)
+		{
+			return pool[index].Item;
 		}
 
 		public void SetItem(int index, Item item)
 		{
-			Items[index] = item;
-			Items[index].Active = true;
-		}
-
-		public void SetUnusedItem(Item item)
-		{
-			for (int i = 0; i < Items.Length; i++)
-			{
-				if (Items[i].Active == false)
-				{
-					Items[i] = item;
-					Items[i].Active = true;
-
-					break;
-				}
-			}
+			pool[index].Item = item;
+			pool[index].Active = true;
 		}
 
 		public int GetUnusedIndex()
 		{
-			for (int i = 0; i < Items.Length; i++)
+			for (int i = 0; i < pool.Length; i++)
 			{
-				if (Items[i].Active == false)
+				if (pool[i].Active == false)
 				{
 					return i;
 				}
@@ -80,13 +79,39 @@ namespace NetZone
 			return 0; //Pool overflow !!!
 		}
 
+		public void SetUnusedItem(Item item)
+		{
+			for (int i = 0; i < pool.Length; i++)
+			{
+				if (pool[i].Active == false)
+				{
+					pool[i].Item = item;
+					pool[i].Active = true;
+					break;
+				}
+			}
+		}
+
+		public bool IsFull()
+		{
+			for (int i = 0; i < pool.Length; i++)
+			{
+				if (pool[i].Active == false)
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+
 		public void Draw(SpriteBatch spriteBatch)
 		{
-			for (int i = 0; i < Items.Length; i++)
+			for (int i = 0; i < pool.Length; i++)
 			{
-				if (Items[i].Active == true)
+				if (pool[i].Active == true)
 				{
-					Items[i].Draw(spriteBatch);
+					pool[i].Item.Draw(spriteBatch);
 				}
 			}
 		}

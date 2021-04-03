@@ -13,6 +13,8 @@ namespace NetZone
 	{
 		public PlayerPool PlayerPool;
 
+		public EnemyPool EnemyPool;
+
 		public ProjectilePool ProjectilePool;
 
 		public ItemPool GroundItems;
@@ -23,6 +25,8 @@ namespace NetZone
 
 		bool canPickupItem;
 
+		bool endInitializeCalled;
+
 		public GameScreen()
 		{
 			PlayerPool = new PlayerPool(10);
@@ -31,9 +35,16 @@ namespace NetZone
 
 			GroundItems = new ItemPool(10);
 
-			ChatBox = new ChatBox();
+			EnemyPool = new EnemyPool(10, PlayerPool, ProjectilePool);
 
-			InventoryUI = new InventoryUI(PlayerPool.Players[Client.GetID()].Inventory);
+			ChatBox = new ChatBox();
+		}
+
+		public void EndInitialize() //Called after getting ALL data initalization packets from server
+		{
+			InventoryUI = new InventoryUI(PlayerPool.GetPlayer(Client.GetID()).Inventory);
+
+			endInitializeCalled = true;
 		}
 
 		public void Update(GameTime gameTime)
@@ -51,15 +62,18 @@ namespace NetZone
 
 			ChatBox.Update();
 
-			InventoryUI.Update();
-
 			PlayerPool.Update(gameTime);
 
 			ProjectilePool.Update(gameTime);
 
 			GroundItems.Update();
 
-			Main.MainCamera.FollowPosition(PlayerPool.Players[Client.GetID()].Position);
+			Main.MainCamera.FollowPosition(PlayerPool.GetPlayer(Client.GetID()).Position);
+
+			if(endInitializeCalled == true) //Not sure if bad
+			{
+				InventoryUI.Update();
+			}
 		}
 
 		void Movement()
@@ -93,7 +107,7 @@ namespace NetZone
 		{
 			if (KeyBindings.KeyPressing(KeyType.Attack))
 			{
-				Vector2 mouseDirection = Main.MainCamera.GetMousePosition().ToVector2() - PlayerPool.Players[Client.GetID()].Position.ToVector2();
+				Vector2 mouseDirection = Main.MainCamera.GetMousePosition().ToVector2() - PlayerPool.GetPlayer(Client.GetID()).Position.ToVector2();
 				mouseDirection.Normalize();
 
 				PacketManager.PlayerAttackSend(mouseDirection);
@@ -102,15 +116,15 @@ namespace NetZone
 
 		void ItemHighlighting()
 		{
-			for(int i = 0; i < GroundItems.Items.Length; i++)
+			for(int i = 0; i < GroundItems.Length(); i++)
 			{
-				if(GroundItems.Items[i].Collider.Contains(Main.MainCamera.GetMousePosition()))
+				if(GroundItems.GetItem(i).Collider.Contains(Main.MainCamera.GetMousePosition()))
 				{
-					GroundItems.Items[i].Highlighted = true;
+					GroundItems.GetItem(i).Highlighted = true;
 				}
 				else
 				{
-					GroundItems.Items[i].Highlighted = false;
+					GroundItems.GetItem(i).Highlighted = false;
 				}
 			}
 		}
@@ -121,11 +135,14 @@ namespace NetZone
 			{
 				if(canPickupItem == true)
 				{
-					for (int i = 0; i < GroundItems.Items.Length; i++)
+					for (int i = 0; i < GroundItems.Length(); i++)
 					{
-						if (GroundItems.Items[i].Collider.Contains(Main.MainCamera.GetMousePosition()))
+						if(GroundItems.GetActive(i) == true)
 						{
-							PacketManager.ItemPickupSend(i);
+							if (GroundItems.GetItem(i).Collider.Contains(Main.MainCamera.GetMousePosition()))
+							{
+								PacketManager.ItemPickupSend(i);
+							}
 						}
 					}
 				}
@@ -138,6 +155,13 @@ namespace NetZone
 			}
 		}
 
+		public void PlayerInventoryAdd(int playerID, int itemIndex, int inventoryIndex)
+		{
+			PlayerPool.GetPlayer(playerID).Inventory.SetItem(inventoryIndex, GroundItems.GetItem(itemIndex));
+
+			GroundItems.SetActive(itemIndex, false);
+		}
+
 		public void Draw(SpriteBatch spriteBatch)
 		{
 			PlayerPool.Draw(spriteBatch);
@@ -145,13 +169,18 @@ namespace NetZone
 			ProjectilePool.Draw(spriteBatch);
 
 			GroundItems.Draw(spriteBatch);
+
+			EnemyPool.Draw(spriteBatch);
 		}
 
 		public void DrawUI(SpriteBatch spriteBatch)
 		{
 			ChatBox.Draw(spriteBatch);
 
-			InventoryUI.Draw(spriteBatch);
+			if(endInitializeCalled == true)
+			{
+				InventoryUI.Draw(spriteBatch);
+			}
 		}
 	}
 }

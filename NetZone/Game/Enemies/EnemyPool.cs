@@ -5,26 +5,34 @@ using System.Threading;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 
 namespace NetZone
 {
-	struct PlayerPoolObject
+	struct EnemyPoolObject
 	{
-		public Player Player;
+		public Enemy Enemy;
 		public bool Active;
 	}
 
-	class PlayerPool
+	class EnemyPool
 	{
-		PlayerPoolObject[] pool;
+		EnemyPoolObject[] pool;
 
-		public PlayerPool(int size)
+		PlayerPool playerPool;
+		ProjectilePool projectilePool;
+
+		public EnemyPool(int size, PlayerPool players, ProjectilePool projectiles)
 		{
-			pool = new PlayerPoolObject[size];
+			playerPool = players;
+			projectilePool = projectiles;
+
+			pool = new EnemyPoolObject[size];
 
 			for (int i = 0; i < pool.Length; i++)
 			{
-				pool[i].Player = new Player();
+				pool[i].Enemy = new Enemy();
+				pool[i].Active = false;
 			}
 		}
 
@@ -34,7 +42,7 @@ namespace NetZone
 			{
 				if (pool[i].Active == true)
 				{
-					pool[i].Player.Update(gameTime);
+					pool[i].Enemy.Update(gameTime);
 				}
 			}
 		}
@@ -54,14 +62,16 @@ namespace NetZone
 			pool[index].Active = value;
 		}
 
-		public Player GetPlayer(int index)
+		public Enemy GetEnemy(int index)
 		{
-			return pool[index].Player;
+			return pool[index].Enemy;
 		}
 
-		public void SetPlayer(int index, Player player)
+		public void SetEnemy(int index, EnemyType type, Point position)
 		{
-			pool[index].Player = player;
+			pool[index].Enemy = ParseEnemyType(type);
+
+			pool[index].Enemy.Position = position;
 			pool[index].Active = true;
 		}
 
@@ -78,18 +88,34 @@ namespace NetZone
 			return 0; //Pool overflow !!!
 		}
 
-		public void SetUnusedPlayer(Player player)
+		public void SetUnusedEnemy(EnemyType type, Point position)
 		{
 			for (int i = 0; i < pool.Length; i++)
 			{
 				if (pool[i].Active == false)
 				{
-					pool[i].Player = player;
-					pool[i].Active = true;
+					pool[i].Enemy = ParseEnemyType(type);
 
+					pool[i].Enemy.Position = position;
+					pool[i].Active = true;
 					break;
 				}
 			}
+		}
+
+		Enemy ParseEnemyType(EnemyType type)
+		{
+			switch (type)
+			{
+				case EnemyType.CyberFrog:
+					return new CyberFrog(playerPool, projectilePool);
+				case EnemyType.WanaWorm:
+					return new WanaWorm(playerPool, projectilePool);
+				case EnemyType.VaccineNanoDrone:
+					return new VaccineNanoDrone(playerPool, projectilePool);
+			}
+
+			return null;
 		}
 
 		public bool IsFull()
@@ -111,17 +137,17 @@ namespace NetZone
 
 			for (int i = 0; i < pool.Length; i++)
 			{
-				positions[i] = pool[i].Player.Position;
+				positions[i] = pool[i].Enemy.Position;
 			}
 
 			return positions;
 		}
 
-		public void SetPositions(Point[] positions)
+		public void SetAllPositions(Point[] positions)
 		{
 			for (int i = 0; i < pool.Length; i++)
 			{
-				pool[i].Player.Position = positions[i];
+				pool[i].Enemy.Position = positions[i];
 			}
 		}
 
@@ -131,7 +157,7 @@ namespace NetZone
 			{
 				if (pool[i].Active == true)
 				{
-					pool[i].Player.Draw(spriteBatch);
+					pool[i].Enemy.Draw(spriteBatch);
 				}
 			}
 		}

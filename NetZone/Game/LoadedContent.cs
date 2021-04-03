@@ -13,11 +13,15 @@ namespace NetZone
 	{
 		public static Texture2D Pixel;
 
+		public static Texture2D GlyphAtlas;
+
 		public static Dictionary<int, SpriteFont> Fonts;
 
 		public static void Load(ContentManager contentManager)
 		{
 			Pixel = contentManager.Load<Texture2D>("Pixel");
+
+			GlyphAtlas = contentManager.Load<Texture2D>("GlyphAtlasTransparent");
 
 			Fonts = new Dictionary<int, SpriteFont>()
 			{

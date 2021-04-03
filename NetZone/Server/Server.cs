@@ -62,13 +62,28 @@ namespace NetZone
 
 					DebugConsole.NewLine($"{tcpClient.Client.RemoteEndPoint} connected to the server.", Color.LawnGreen);
 
-					PacketManager.InitalServerConnectionSend(i);
+					InitializeClientData(i);
 
 					return;
 				}
 			}
 
 			DebugConsole.NewLine($"{tcpClient.Client.RemoteEndPoint} failed to connect: Server full!", Color.Red);
+		}
+
+		static void InitializeClientData(int clientID)
+		{
+			PacketManager.InitalServerConnectionSend(clientID);
+
+			PacketManager.InitializePlayersSend(clientID, GameLogic.PlayerPool);
+
+			PacketManager.InitializeItemsSend(clientID, GameLogic.GroundItems);
+
+			PacketManager.InitializeEnemiesSend(clientID, GameLogic.EnemyPool);
+
+			GameLogic.PlayerSpawn(clientID);
+
+			PacketManager.EndInitializeSend(clientID);
 		}
 
 		public void Update(GameTime gameTime)

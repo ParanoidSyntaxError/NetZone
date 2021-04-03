@@ -3,15 +3,28 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Xna.Framework;
 
 namespace NetZone
 {
-	class JohnsHelper
+	enum ArmorType
 	{
-		public static int PointDistance(Point a, Point b)
+		Head,
+		Chest,
+		Legs,
+
+		Ring,
+		Necklace
+	}
+
+	class Armor : Item
+	{
+		public int Defence;
+
+		public ArmorType Type;
+
+		public Armor()
 		{
-			return Math.Abs((a.X - b.X) + (a.Y - b.Y));
+
 		}
 	}
 }

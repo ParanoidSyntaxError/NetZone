@@ -11,15 +11,19 @@ namespace NetZone
 {
 	class InventoryUI : UIElement
 	{
-		ItemPool inventory;
+		public ItemPool inventory;
 
-		Rectangle[] items;
+		Rectangle[] itemsBackgrounds;
 
 		public InventoryUI(ItemPool itemPool)
 		{
+			Title = "INVENTORY";
+
 			Position = new Point(400, 100);
 
-			Size = new Point(25, 30);
+			Size = new Point(19, 5);
+
+			Scale = 2;
 
 			Moveable = true;
 
@@ -27,11 +31,11 @@ namespace NetZone
 
 			inventory = itemPool;
 
-			items = new Rectangle[inventory.Items.Length];
+			itemsBackgrounds = new Rectangle[itemPool.Length()];
 
-			for (int i = 0; i < items.Length; i++)
+			for (int i = 0; i < itemsBackgrounds.Length; i++)
 			{
-				items[i] = new Rectangle(0, 400, 20, 20);
+				itemsBackgrounds[i] = new Rectangle(0, 0, 8 * Scale, 16 * Scale);
 			}
 
 			PositionItemColliders();
@@ -49,13 +53,13 @@ namespace NetZone
 			int x = 0;
 			int y = 0;
 
-			for (int i = 0; i < items.Length; i++)
+			for (int i = 0; i < itemsBackgrounds.Length; i++)
 			{
-				items[i].Location = new Point(Position.X + 16 + x * 20, Position.Y + 19 + y * 20);
+				itemsBackgrounds[i].Location = new Point(Position.X + (8 * Scale) + x * (16 * Scale), Position.Y + (16 * Scale) + y * (16 * Scale));
 
 				x += 1;
 
-				if(x % 5 == 0)
+				if(x % 10 == 0)
 				{
 					x = 0;
 					y += 1;
@@ -67,20 +71,18 @@ namespace NetZone
 		{
 			base.Draw(spriteBatch);
 
-			for (int i = 0; i < items.Length; i++)
+			for (int i = 0; i < itemsBackgrounds.Length; i++)
 			{
-				string icon = "G";
+				string icon = ".";
 				Color iconColor = Color.White;
 
-				spriteBatch.Draw(LoadedContent.Pixel, items[i], Color.Green);
-
-				if(inventory.Items[i].Active == true)
+				if(inventory.GetActive(i) == true)
 				{
-					icon = inventory.Items[i].Art;
-					iconColor = inventory.Items[i].Color;
+					icon = inventory.GetItem(i).Art;
+					iconColor = inventory.GetItem(i).Color;
 				}
 
-				spriteBatch.DrawString(LoadedContent.Fonts[0], icon, items[i].Location.ToVector2(), iconColor);
+				GlyphHelper.DrawGlyph(spriteBatch, icon, itemsBackgrounds[i].Location, Scale, iconColor);
 			}
 		}
 	}

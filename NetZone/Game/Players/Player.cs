@@ -13,15 +13,13 @@ namespace NetZone
 	{
 		public Point Position;
 
-		public float Speed;
+		public int Speed;
 
 		public float AttackTimer;
 
-		public bool Active;
-
 		public ItemPool Inventory;
 
-		Weapon equippedWeapon;
+		public Weapon EquippedWeapon;
 
 		public Player()
 		{
@@ -31,8 +29,8 @@ namespace NetZone
 
 			AttackTimer = 0;
 
-			Inventory = new ItemPool(10);
-			equippedWeapon = UniqueWeapons.PhasedPlasmaRifle();
+			Inventory = new ItemPool(50);
+			EquippedWeapon = UniqueWeapon.PhasedPlasmaRifle();
 		}
 
 		public void Update(GameTime gameTime)
@@ -54,12 +52,12 @@ namespace NetZone
 
 		public Projectile AttackProjectile()
 		{
-			return equippedWeapon.GetProjectile();
+			return EquippedWeapon.GetProjectile();
 		}
 
 		public void Draw(SpriteBatch spriteBatch)
 		{
-			spriteBatch.DrawString(LoadedContent.Fonts[0], "@", Position.ToVector2(), Color.White);
+			GlyphHelper.DrawGlyph(spriteBatch, "@", Position, 2, Color.White);
 		}
 	}
 }

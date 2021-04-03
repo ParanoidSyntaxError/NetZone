@@ -11,6 +11,8 @@ namespace NetZone
 
 		public Matrix Transform;
 
+		Point position;
+
 		float zoom = 1;
 
 		public virtual void Zoom(float amount)
@@ -21,15 +23,21 @@ namespace NetZone
 			{
 				zoom = 0.2f;
 			}
+
+			Transform = Matrix.CreateTranslation(new Vector3(-position.X, -position.Y, 0)) * Matrix.CreateScale(Settings.Scale * zoom);
 		}
 
 		public virtual void ResetZoom()
 		{
 			zoom = 1;
+
+			Transform = Matrix.CreateTranslation(new Vector3(-position.X, -position.Y, 0)) * Matrix.CreateScale(Settings.Scale * zoom);
 		}
 
-		public virtual void FollowPosition(Point position)
+		public virtual void FollowPosition(Point target)
 		{
+			position = target;
+
 			Transform = Matrix.CreateTranslation(new Vector3(-position.X, -position.Y, 0)) *
 						Matrix.CreateScale(Settings.Scale * zoom) *
 						Matrix.CreateTranslation(new Vector3(view.Width / 2, view.Height / 2, 0));

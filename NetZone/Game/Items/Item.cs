@@ -18,14 +18,12 @@ namespace NetZone
 
 		public Rectangle Collider;
 
-		public bool Active;
-
 		public Item()
 		{
-			Collider = new Rectangle(Position, new Point(12, 16));
+			Collider = new Rectangle(Position, new Point(16, 32));
 		}
 
-		public virtual void Update()
+		public void Update()
 		{
 			if (Highlighted == true)
 			{
@@ -39,17 +37,17 @@ namespace NetZone
 			Collider.Location = Position;
 		}
 
-		public virtual void Draw(SpriteBatch spriteBatch)
+		public void Draw(SpriteBatch spriteBatch)
 		{
 			if (flashing == true)
 			{
-				spriteBatch.Draw(LoadedContent.Pixel, new Rectangle(new Point(Position.X - 1, Position.Y - 1), new Point(12, 16)), Color);
+				spriteBatch.Draw(LoadedContent.Pixel, Collider, Color);
 
-				spriteBatch.DrawString(LoadedContent.Fonts[0], Art, Position.ToVector2(), Color.Black);
+				GlyphHelper.DrawGlyph(spriteBatch, Art, Position, 2, Color.Black);
 			}
 			else
 			{
-				spriteBatch.DrawString(LoadedContent.Fonts[0], Art, Position.ToVector2(), Color);
+				GlyphHelper.DrawGlyph(spriteBatch, Art, Position, 2, Color);
 			}
 		}
 	}

@@ -23,7 +23,7 @@ namespace NetZone
 
 		public int Damage;
 
-		public float Speed;
+		public int Speed;
 
 		public float Range;
 
@@ -40,14 +40,14 @@ namespace NetZone
 
 		public Color Color;
 
-		public bool Active;
+		public bool Deactivate; //Tells pool this object can be deactived
 
 		public Projectile()
 		{
 
 		}
 
-		public Projectile(int damage, float speed, float range, Color color)
+		public Projectile(int damage, int speed, float range, Color color)
 		{
 			Damage = damage;
 
@@ -60,7 +60,7 @@ namespace NetZone
 			Color = color;
 		}
 
-		public Projectile(int damage, float speed, float range, float frequency, float amplitude, Color color)
+		public Projectile(int damage, int speed, float range, float frequency, float amplitude, Color color)
 		{
 			Damage = damage;
 
@@ -83,7 +83,7 @@ namespace NetZone
 
 			frameAdjustedSpeed = Speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-			rotation += frameAdjustedSpeed * 0.07f;
+			rotation += frameAdjustedSpeed * 0.05f;
 
 			switch (Type)
 			{
@@ -103,13 +103,15 @@ namespace NetZone
 			{
 				timer = 0;
 
-				Active = false;
+				Deactivate = true;
 			}
 		}
 
 		public void Draw(SpriteBatch spriteBatch)
 		{
-			spriteBatch.DrawString(LoadedContent.Fonts[0], "*", Position.ToVector2() + new Vector2(5, 5), Color, rotation, new Vector2(6, 6), 1, SpriteEffects.None, 0);
+			//spriteBatch.DrawString(LoadedContent.Fonts[0], "*", Position.ToVector2() + new Vector2(5, 5), Color, rotation, new Vector2(6, 6), 1, SpriteEffects.None, 0);
+
+			GlyphHelper.DrawGlyph(spriteBatch, "*", Position, 2, Color);
 		}
 	}
 }

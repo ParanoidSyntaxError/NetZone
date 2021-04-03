@@ -10,7 +10,7 @@ namespace NetZone
 	{
 		public int Damage;
 
-		public float Speed;
+		public int Speed;
 
 		public float Range;
 
